@@ -1,0 +1,72 @@
+[
+    {
+        "iteration": 1875,
+        "validation/main/loss": 0.0007245717919803561,
+        "elapsed_time": 10.878744358999029,
+        "main/loss": 0.013347516436626513,
+        "epoch": 1
+    },
+    {
+        "iteration": 3750,
+        "validation/main/loss": 0.00046161438461940604,
+        "elapsed_time": 22.64552191399889,
+        "main/loss": 0.0005611073419917375,
+        "epoch": 2
+    },
+    {
+        "iteration": 5625,
+        "validation/main/loss": 0.00038165974974879225,
+        "elapsed_time": 34.227740512998935,
+        "main/loss": 0.0004205673011640708,
+        "epoch": 3
+    },
+    {
+        "iteration": 7500,
+        "validation/main/loss": 0.0003257366315723537,
+        "elapsed_time": 45.11569478599995,
+        "main/loss": 0.00035377855055655045,
+        "epoch": 4
+    },
+    {
+        "iteration": 9375,
+        "validation/main/loss": 0.00028016982990995454,
+        "elapsed_time": 55.9205063419995,
+        "main/loss": 0.0003024420405117174,
+        "epoch": 5
+    },
+    {
+        "iteration": 11250,
+        "validation/main/loss": 0.0002550237480894671,
+        "elapsed_time": 67.02238120499896,
+        "main/loss": 0.00026860782001167534,
+        "epoch": 6
+    },
+    {
+        "iteration": 13125,
+        "validation/main/loss": 0.0002412247220362974,
+        "elapsed_time": 78.39603019499918,
+        "main/loss": 0.00024777977626460295,
+        "epoch": 7
+    },
+    {
+        "iteration": 15000,
+        "validation/main/loss": 0.00022969276651914138,
+        "elapsed_time": 89.9765066559994,
+        "main/loss": 0.0002356783930057039,
+        "epoch": 8
+    },
+    {
+        "iteration": 16875,
+        "validation/main/loss": 0.00021899643850835642,
+        "elapsed_time": 101.16189106599995,
+        "main/loss": 0.00022476925497564177,
+        "epoch": 9
+    },
+    {
+        "iteration": 18750,
+        "validation/main/loss": 0.00020989242197459225,
+        "elapsed_time": 112.35363621799843,
+        "main/loss": 0.00021385678870137781,
+        "epoch": 10
+    }
+]
