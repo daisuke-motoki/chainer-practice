@@ -5,6 +5,7 @@ from chainer import serializers, iterators, optimizers, training
 from chainer.training import extensions
 from nets import CNNSentenceClassifier
 from utils import make_vectorizer, text_to_word_sequence
+from utils import SerialPaddingIterator
 
 
 def get_inputs(texts, labels, tokenizer, vocabulary, label_encoder,
@@ -88,19 +89,19 @@ if __name__ == "__main__":
                       null_id,
                       unknown_id)
 
-    train_iter = iterators.SerialIterator(train,
-                                          batch_size=1,
-                                          shuffle=True)
-    test_iter = iterators.SerialIterator(test,
-                                         batch_size=1,
-                                         shuffle=False,
-                                         repeat=False)
+    train_iter = SerialPaddingIterator(train,
+                                       batch_size=32,
+                                       shuffle=True)
+    test_iter = SerialPaddingIterator(test,
+                                      batch_size=32,
+                                      shuffle=False,
+                                      repeat=False)
 
     n_vocab = len(vocabulary.keys())
     n_units = 200
     model = CNNSentenceClassifier(n_vocab,
                                   n_units,
-                                  filter_sizes=[1],
+                                  filter_sizes=[2,4],
                                   n_filter=10,
                                   drop_rate=0.2,
                                   n_class=len(labels),
