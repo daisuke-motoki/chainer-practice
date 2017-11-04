@@ -66,8 +66,8 @@ class CNNSentenceClassifier(Chain):
             hidden = F.reshape(hidden, (nb, self.n_filter))
             hiddens.append(hidden)
         h = F.concat(hiddens, axis=-1)
-        with chainer.using_config("train", train):
-            h = F.dropout(h, ratio=self.drop_rate)
+        # with chainer.using_config("train", train):
+        h = F.dropout(h, ratio=self.drop_rate)
 
         if train:
             y = self["fc"](h)

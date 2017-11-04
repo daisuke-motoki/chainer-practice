@@ -106,10 +106,9 @@ if __name__ == "__main__":
                                   drop_rate=0.2,
                                   n_class=len(labels),
                                   init_E=init_E)
-    model.embed.disable_update()
-
     optimizer = optimizers.Adam()
     optimizer.setup(model)
+    model.embed.disable_update()
 
     updater = training.StandardUpdater(train_iter,
                                        optimizer,
