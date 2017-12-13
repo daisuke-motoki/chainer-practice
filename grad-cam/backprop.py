@@ -23,12 +23,13 @@ class Backprop:
 
         return activations
 
-    def backward(self, target_prob):
+    def backward(self, target_prob, enable_double_backprop=False):
         """ backward
         """
         self.model.cleargrads()
         loss = F.sum(target_prob)
-        loss.backward(retain_grad=True)
+        loss.backward(retain_grad=True,
+                      enable_double_backprop=enable_double_backprop)
 
     def select_target(self, prob, label):
         """
@@ -87,6 +88,8 @@ class GradCAM(Backprop):
 
 class GradCAM_PP(Backprop):
     """ Grad-CAM++
+
+        THERE IS A BUG...
     """
     def __init__(self, model, target_layer="conv5_3", prob_layer="prob"):
         """ init
@@ -113,26 +116,34 @@ class GradCAM_PP(Backprop):
             chainer.Variable(target_label) * activations[self.prob_layer]
 
         # backward
-        self.backward(target_prob)
+        # self.backward(target_prob, enable_double_backprop=True)
         target_activation = activations[self.target_layer]
         label_index = target_label.argmax()
-        first_grad = self.xp.exp(prob)[label_index] * target_activation.grad
-        second_grad = first_grad * target_activation.grad
-        third_grad = second_grad * target_activation.grad
+        coeff = self.xp.exp(target_prob[0][label_index].data)
+        # first_grad = coeff * target_activation.grad_var
+        first_grad, = chainer.grad([coeff * target_prob],
+                                   [target_activation],
+                                   enable_double_backprop=True)
+        second_grad, = chainer.grad([first_grad],
+                                    [target_activation],
+                                    enable_double_backprop=True)
+        third_grad, = chainer.grad([second_grad],
+                                   [target_activation],
+                                   enable_double_backprop=True)
         global_sum = self.xp.sum(target_activation.data, axis=(2, 3))
-        global_sum = global_sum.reshape(first_grad[0].shape[0], 1, 1)
-        alpha_num = second_grad[0]
-        alpha_denom = 2.0 * second_grad[0] + global_sum[0] * third_grad[0]
+        global_sum = global_sum.reshape(first_grad.data[0].shape[0], 1, 1)
+        alpha_num = second_grad.data[0]
+        alpha_denom = \
+            2.0 * second_grad.data[0] + global_sum[0] * third_grad.data[0]
         alpha_denom = self.xp.where(alpha_denom != 0.0,
                                     alpha_denom,
                                     self.xp.ones(alpha_denom.shape))
         alphas = alpha_num / alpha_denom
-        # alphas /= self.xp.sum(alphas, axis=(1, 2))[:, self.xp.newaxis, self.xp.newaxis]
+        alphas /= self.xp.sum(alphas,
+                              axis=(1, 2))[:, self.xp.newaxis, self.xp.newaxis]
         importances = self.xp.sum(
-            # alphas * self.xp.maximum(first_grad[0], 0.0),
-            # # When I apply ReLU to gradients, the result is class
-            # # discriminatve. This code might be wrong somewhere...
-            alphas * first_grad[0],
+            alphas * self.xp.maximum(first_grad.data[0], 0),
+            # alphas * first_grad.data[0],
             axis=(1, 2)
         )
 
