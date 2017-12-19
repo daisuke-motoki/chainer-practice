@@ -13,7 +13,8 @@ if __name__ == "__main__":
     filename = "images/dog_cat.png"
     images = [Image.open(filename)]
     # target_label = 282
-    target_label = -1
+    target_label = 242
+    # target_label = -1
 
     # Grad-CAM
     vgg = VGG16Layers()

@@ -89,7 +89,7 @@ class GradCAM(Backprop):
 class GradCAM_PP(Backprop):
     """ Grad-CAM++
 
-        THERE IS A BUG...
+        THERE MIGHT BE A BUG...
     """
     def __init__(self, model, target_layer="conv5_3", prob_layer="prob"):
         """ init
