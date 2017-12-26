@@ -1,32 +1,56 @@
+import chainer
+from chainer import function
 from chainer import Chain
 from chainer import initializers
 from chainer import report
+from chainer.variable import Variable
+from chainer.dataset.convert import concat_examples
 import chainer.functions as F
 import chainer.links as L
-from collections import OrderedDict
-from links.connection.caps_conv_2d import CapsConv2D
+from links.connection.caps_conv import CapsConv
 from links.connection.caps_linear import CapsLinear
-from functions.activation.squash import squash
 
 
 class CapsNet(Chain):
     """
     """
-    def __init__(self, recon_loss_weight=0.0005):
+    def __init__(self):
         """
         """
         super(CapsNet, self).__init__()
-        self.recon_loss_weight = recon_loss_weight
+        self.recon_loss_weight = 0.0005
+        self.grid_weight_share = False
+        init_scale = 0.1
 
-        init_W = initializers.HeNormal()
+        # init_W = initializers.HeNormal()
+        init_W = initializers.Uniform(scale=init_scale)
+        conv1_param = dict(in_channels=1, out_channels=256,
+                           ksize=9, stride=1,
+                           nobias=True, initialW=init_W)
+        pcaps_param = dict(in_caps=1, in_dims=256,
+                           out_caps=32, out_dims=8,
+                           n_iters=1,
+                           ksize=9, stride=2,
+                           nobias=True, initialW=init_W)
+        if self.grid_weight_share:
+            dcapsconv_param = dict(in_caps=32, in_dims=8,
+                                   out_caps=10, out_dims=16,
+                                   n_iters=3, flat_output=True,
+                                   ksize=1, stride=1,
+                                   nobias=True, initialW=init_W)
+        else:
+            dcapslin_param = dict(in_caps=32*6*6, in_dims=8,
+                                  out_caps=10, out_dims=16,
+                                  n_iters=3,
+                                  initialW=init_W)
         with self.init_scope():
-            self.conv1 = L.Convolution2D(1, 256, ksize=9, stride=1,
-                                         nobias=True, initialW=init_W)
+            self.conv1 = L.Convolution2D(**conv1_param)
+            self.primarycaps = CapsConv(**pcaps_param)
 
-            self.primarycaps = CapsConv2D(256, 1, 32, 8, ksize=9, stride=2,
-                                          nobias=True, initialW=init_W)
-
-            self.digitcaps = CapsLinear(32*6*6, 8, 10, 16)
+            if self.grid_weight_share:
+                self.digitcaps = CapsConv(**dcapsconv_param)
+            else:
+                self.digitcaps = CapsLinear(**dcapslin_param)
 
             # for reconstruction
             self.fc1 = L.Linear(16 * 10, 512, initialW=init_W)
@@ -47,17 +71,16 @@ class CapsNet(Chain):
             activations["conv1"] = act
 
         # primary capsule
-        hidden = self.primarycaps(act)
-        act = squash(hidden, axis=2)
+        act = self.primarycaps(act[:, None])
         if "primarycaps" in layers:
             activations["primarycaps"] = act
 
         # digit capsule
-        hidden = self.digitcaps(act)
+        act = self.digitcaps(act)
         if "digitcaps" in layers:
-            activations["digitcaps"] = hidden
+            activations["digitcaps"] = act
 
-        act = self._length(hidden)
+        act = self._length(act)
         if "prob" in layers:
             activations["prob"] = act
 
@@ -77,7 +100,7 @@ class CapsNet(Chain):
         L_present = t_discreted * F.square(F.relu(m_plus - x))
         L_absent = (1. - t_discreted) * F.square(F.relu(x - m_minus))
         L = L_present + l * L_absent
-        return F.sum(L) / float(batchsize)
+        return F.mean(F.sum(L, axis=-1))
 
     def reconstruct(self, x, t):
         """
@@ -95,25 +118,40 @@ class CapsNet(Chain):
     def loss(self, x, t, **kwargs):
         """
         """
-        activations = self.__call__(x, layers=["digitcaps", "prob"])
-        reconstructions = self.reconstruct(activations["digitcaps"], t)
+        activations = self.extract(x, layers=["digitcaps", "prob"])
+        recons = self.reconstruct(activations["digitcaps"], t)
 
         # classification loss
         c_loss = self._margin_loss(activations["prob"], t)
         # reconstruction loss
-        r_loss = F.mean_squared_error(x, reconstructions.reshape(x.shape))
+        recons = recons.reshape(x.shape)
+        r_loss = F.mean(F.sum(F.squared_error(x, recons), axis=(1, 2, 3)))
+        r_loss *= self.recon_loss_weight
 
-        total_loss = c_loss + self.recon_loss_weight * r_loss
+        total_loss = c_loss + r_loss
         report({"loss": total_loss, "c_loss": c_loss, "r_loss": r_loss}, self)
+        accuracy = F.accuracy(activations["prob"], t)
+        report({"accuracy": accuracy}, self)
 
         return total_loss
 
-    def extract(self):
+    def extract(self, images, layers=["digitcaps"]):
         """
         """
-        pass
+        x = concat_examples([preprocess(image) for image in images])
+        x = Variable(self.xp.asarray(x))
+        activations = self(x, layers=layers)
+        return activations
 
-    def predict(self):
+    def predict(self, images, layers=["prob"]):
         """
         """
-        pass
+        with function.no_backprop_mode(), chainer.using_config("train", False):
+            activations = self.extract(images, layers=layers)
+        return activations
+
+
+def preprocess(image):
+    """
+    """
+    return image

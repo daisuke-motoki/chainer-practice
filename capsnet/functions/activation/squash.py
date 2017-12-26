@@ -1,7 +1,7 @@
 import chainer.functions as F
 
 
-def squash(vector, axis=0):
+def squash(vector, axis=-1):
     """
     """
     vec_squared_norm = F.sum(F.square(vector), axis=axis, keepdims=True)

@@ -6,10 +6,10 @@ from nets import CapsNet
 if __name__ == "__main__":
     result_dir = "result/mnist"
     train, test = datasets.get_mnist(withlabel=True, ndim=3)
-    train_iter = iterators.SerialIterator(train[:1000],
+    train_iter = iterators.SerialIterator(train,
                                           batch_size=32,
                                           shuffle=True)
-    test_iter = iterators.SerialIterator(test[:1000],
+    test_iter = iterators.SerialIterator(test,
                                          batch_size=32,
                                          shuffle=False,
                                          repeat=False)
@@ -36,18 +36,27 @@ if __name__ == "__main__":
     if extensions.PlotReport.available():
         trainer.extend(
             extensions.PlotReport(
-                ["main/loss", "validation/main/loss"],
+                ["main/loss", "main/c_loss", "main/r_loss",
+                 "validation/main/loss", "validation/main/c_loss",
+                 "validation/main/r_loss"],
                 "epoch", file_name="loss.png"
+            )
+        )
+        trainer.extend(
+            extensions.PlotReport(
+                ["main/accuracy",
+                 "validation/main/accuracy"],
+                "epoch", file_name="accuracy.png"
             )
         )
     trainer.extend(
         extensions.PrintReport(
             ["epoch", "main/loss", "main/c_loss", "main/r_loss",
-             "validation/main/loss", "validation/main/c_loss",
-             "validation/main/r_loss", "elapsed_time"]
+             "main/accuracy", "validation/main/loss",
+             "validation/main/c_loss", "validation/main/r_loss",
+             "validation/main/accuracy", "elapsed_time"]
         )
     )
     trainer.extend(extensions.ProgressBar())
     trainer.run()
-    model.save_structure(result_dir + "/model_structure.json")
     serializers.save_npz(result_dir + "/model_weights.npz", model)
