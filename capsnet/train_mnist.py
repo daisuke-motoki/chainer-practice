@@ -4,7 +4,7 @@ from nets import CapsNet
 
 
 if __name__ == "__main__":
-    result_dir = "result/mnist"
+    result_dir = "result/tmp"
     train, test = datasets.get_mnist(withlabel=True, ndim=3)
     train_iter = iterators.SerialIterator(train,
                                           batch_size=32,
@@ -58,5 +58,6 @@ if __name__ == "__main__":
         )
     )
     trainer.extend(extensions.ProgressBar())
+    # serializers.load_npz(result_dir + "/snapshot_2.npz", trainer)
     trainer.run()
     serializers.save_npz(result_dir + "/model_weights.npz", model)

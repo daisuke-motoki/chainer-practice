@@ -14,12 +14,12 @@ from links.connection.caps_linear import CapsLinear
 class CapsNet(Chain):
     """
     """
-    def __init__(self):
+    def __init__(self, grid_weight_share=False):
         """
         """
         super(CapsNet, self).__init__()
+        self.grid_weight_share = grid_weight_share
         self.recon_loss_weight = 0.0005
-        self.grid_weight_share = False
         init_scale = 0.1
 
         # init_W = initializers.HeNormal()

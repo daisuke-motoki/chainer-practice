@@ -19,18 +19,19 @@ def routing(x_hats, n_iters):
         shape = (n_batch, out_caps, in_caps, *extra_dim)
     else:
         shape = (n_batch, out_caps, in_caps)
-    bs = xp.zeros(shape, dtype='f')
+
+    b_ij = xp.zeros(shape, dtype='f')
     for i_iter in range(n_iters):
-        cs = F.softmax(bs, axis=1)
-        Cs = F.broadcast_to(cs[:, :, None], x_hats.shape)
+        c_ij = F.softmax(b_ij, axis=1)
+        c_tmp = F.broadcast_to(c_ij[:, :, None], x_hats.shape)
 
         if i_iter == (n_iters - 1):
-            ss = F.sum(Cs * x_hats, axis=3)
-            vs = squash(ss, axis=2)
+            s_j = F.sum(c_tmp * x_hats, axis=3)
+            v_j = squash(s_j, axis=2)
         else:
-            ss = F.sum(Cs * x_hats.data, axis=3)
-            vs = squash(ss, axis=2)
-            Vs = F.broadcast_to(vs[:, :, :, None], x_hats.shape)
-            bs = bs + F.sum(Vs * x_hats.data, axis=2)
+            s_j = F.sum(c_tmp * x_hats.data, axis=3)
+            v_j = squash(s_j, axis=2)
+            Vs = F.broadcast_to(v_j[:, :, :, None], x_hats.shape)
+            b_ij = b_ij + F.sum(Vs * x_hats.data, axis=2)
 
-    return vs
+    return v_j
